@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Map, MapMarker, MapRoute, MarkerContent } from "@/components/ui/map";
 
 export default function DemoFirstResponder() {
-    const [center, setCenter] = useState<[number, number]>([0, 0]);
+    const [center, setCenter] = useState<[number, number] | null>(null);
     const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
 
     useEffect(() => {
@@ -15,6 +15,9 @@ export default function DemoFirstResponder() {
                 return;
             }
             code.value = localStorage.getItem("code") || "";
+            if(code.value === "") {
+                return; // wait for user to input code
+            }
             await updateInformation(code.value);
             window.setTimeout(updateInformation, 2500, code.value); // update every 2.5 seconds
         };
@@ -33,6 +36,7 @@ export default function DemoFirstResponder() {
                 const data = await response.json();
                 setPoints(data)
                 setCenter([data[0].lat, data[0].lng]);
+                console.log("Location updated:", data);
             } else {
                 console.error("Failed to fetch location data");
             }
@@ -63,7 +67,7 @@ export default function DemoFirstResponder() {
                     const codeInput = document.getElementById("code") as HTMLInputElement;
                     const code = codeInput.value.trim();
                     if (code) {
-                        fetchData(code);
+                        updateInformation(code);
                     } else {
                         alert("Please enter a valid code.");
                     }
@@ -81,7 +85,7 @@ export default function DemoFirstResponder() {
             </div>
 
             <div className="w-80 h-100 mt-10 mx-auto">
-                {center[0] !== 0 && center[1] !== 0 && (
+                {center && (
                     <Map center={[center[1], center[0]]} zoom={15}>
                         <MapMarker longitude={center[1]} latitude={center[0]}>
                             <MarkerContent>
