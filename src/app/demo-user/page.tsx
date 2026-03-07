@@ -23,12 +23,18 @@ export default function DemoUser() {
             }
         }
 
-        // ensure code is in server
+        // ensure code is in server, if not re-sync it
         const res = await fetch("/api/info/exists?code=" + encodeURIComponent(generatedCode || ""));
         if (!res.ok) {
-            console.log("Code not found on server, creating new user...");
-            generatedCode = await createNewUser();
-            if (generatedCode !== "-1") localStorage.setItem("code", generatedCode);
+            console.log("Code not found on server, re-syncing...");
+            const localInfo = localStorage.getItem("info");
+            if (localInfo) {
+                await fetch("/api/info/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ code: generatedCode, data: JSON.parse(localInfo) })
+                });
+            }
         }
 
         setCode(generatedCode || "");

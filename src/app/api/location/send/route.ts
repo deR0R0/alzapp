@@ -10,5 +10,3 @@ export async function POST(request: NextRequest) {
     codeToLocations.get(code)?.push({ lat, lng });
     return new Response("Location received");
 }
-
-export { codeToLocations };
