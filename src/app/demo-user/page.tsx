@@ -9,24 +9,27 @@ export default function DemoUser() {
     const [center, setCenter] = useState<[number, number]>([0, 0]);
 
     useEffect(() => {
+        let watchId: number | null = null;
+        (async () => {
         // see if we already have a code
         let generatedCode = localStorage.getItem("code");
         if(!generatedCode) {
-            generatedCode = createNewUser();
+            generatedCode = await createNewUser();
             if (generatedCode !== "-1") {
                 localStorage.setItem("code", generatedCode);
             } else {
                 alert("Error creating user. Please refresh the page.");
+                return;
             }
         }
 
         // ensure code is in server
-        fetch("/api/info/exists?code=" + encodeURIComponent(generatedCode || "")).then(response => {
-            if (!response.ok) {
-                console.log("Code not found on server, creating new user...");
-                createNewUser();
-            }
-        });
+        const res = await fetch("/api/info/exists?code=" + encodeURIComponent(generatedCode || ""));
+        if (!res.ok) {
+            console.log("Code not found on server, creating new user...");
+            generatedCode = await createNewUser();
+            if (generatedCode !== "-1") localStorage.setItem("code", generatedCode);
+        }
 
         setCode(generatedCode || "");
 
@@ -62,7 +65,7 @@ export default function DemoUser() {
         });
 
         // update location
-        const watchId = navigator.geolocation.watchPosition((position) => {
+        watchId = navigator.geolocation.watchPosition((position) => {
             const { latitude, longitude } = position.coords;
             updateLocation(generatedCode || "", latitude, longitude);
             console.log("Updated location:", latitude, longitude);
@@ -75,9 +78,8 @@ export default function DemoUser() {
             timeout: 5000
         });
 
-        return () => {
-            navigator.geolocation.clearWatch(watchId);
-        }
+        })();
+        return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
     }, [])
 
     const updateLocation = (userCode: string, lat: number, lng: number) => {
@@ -103,7 +105,7 @@ export default function DemoUser() {
         }
     }
 
-    const createNewUser = (): string => {
+    const createNewUser = async (): Promise<string> => {
         // prompt for a name if it doesn't exist
         let name = localStorage.getItem("info") ? JSON.parse(localStorage.getItem("info") || "{}").name : null;
         if (!name) {
@@ -112,16 +114,14 @@ export default function DemoUser() {
         }
 
         // send a request to the server
-        fetch("/api/new", {
+        const response = await fetch("/api/new", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: localStorage.getItem("info"),
-        }).then(response => response.text()).then(code => {
-            return code;
         });
-        return "-1";
+        return await response.text();
     }
     
     const setInfo = () => {
