@@ -9,28 +9,29 @@ export default function DemoUser() {
     const [center, setCenter] = useState<[number, number]>([0, 0]);
 
     useEffect(() => {
-        // generate a code
-        const generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-        setCode(generatedCode);
+        // see if we already have a code
+        let generatedCode = localStorage.getItem("code");
+        if(!generatedCode) {
+            // prompt for a name if it doesn't exist
+            let name = localStorage.getItem("info") ? JSON.parse(localStorage.getItem("info") || "{}").name : null;
+            if (!name) {
+                setInfo();
+                name = JSON.parse(localStorage.getItem("info") || "{}").name;
+            }
 
-        // send it to the server function
-        const sendCodeToServer = async (code: string) => {
-            await fetch("/api/code", {
+            // send a request to the server
+            fetch("/api/new", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    code,
-                    data: typeof window !== 'undefined' && localStorage.getItem("info") ? JSON.parse(localStorage.getItem("info") || '{}') : {}
-                })
+                body: JSON.stringify({ name })
+            }).then(response => response.text()).then(code => {
+                localStorage.setItem("code", code);
+                setCode(code);
             });
         }
-
-        // only send if we have info and we're in the browser
-        if (typeof window !== 'undefined' && localStorage.getItem("info")) {
-            sendCodeToServer(generatedCode);
-        }
+        setCode(generatedCode || "");
 
         navigator.geolocation.getCurrentPosition((position) => {
             const { latitude, longitude } = position.coords;
@@ -78,28 +79,6 @@ export default function DemoUser() {
         alert("Information saved!");
     }
 
-    const setMedications = () => {
-        const meds = prompt("Enter your medications (comma separated):", "Aspirin 100mg, Lisinopril 10mg");
-        const times = prompt("Enter the times you take them (comma separated):", "8:00 AM, 8:00 PM");
-        const locations = prompt("Enter where you last put each one (comma separated):", "Bathroom cabinet, Kitchen drawer");
-
-        const medList = meds?.split(',').map(m => m.trim()) || [];
-        const timeList = times?.split(',').map(t => t.trim()) || [];
-        const locationList = locations?.split(',').map(l => l.trim()) || [];
-
-        const medObjects = medList.map((name, idx) => ({
-        name,
-        time: timeList[idx] || "",
-        location: locationList[idx] || ""
-        }));
-
-        const info = JSON.parse(localStorage.getItem("info") || "{}");
-        info.medications = medObjects;
-        localStorage.setItem("info", JSON.stringify(info));
-
-        alert("Medications saved!");
-    };
-
     return (
         <div className="content flex flex-col">
             { /* buttons */ }
@@ -145,7 +124,7 @@ export default function DemoUser() {
 
             { /* code for first responders */ }
             <div className="bg-zinc-300 w-80 h-30 mt-10 mx-auto items-center justify-center flex text-3xl">
-                CODE: {code}
+                CODE: {code || "Loading..."}
             </div>
         </div>
     )
