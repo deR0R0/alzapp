@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
+import { allCodeToData } from "@/lib/store";
 /*
 allCodeToData = {
     "123456": {
@@ -17,8 +17,6 @@ allCodeToData = {
     }
 }
 */
-
-const allCodeToData = new Map<string, any>();
 
 export async function POST(request: NextRequest) {
     const { name } = await request.json();

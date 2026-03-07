@@ -12,31 +12,47 @@ export default function DemoUser() {
         // see if we already have a code
         let generatedCode = localStorage.getItem("code");
         if(!generatedCode) {
-            // prompt for a name if it doesn't exist
-            let name = localStorage.getItem("info") ? JSON.parse(localStorage.getItem("info") || "{}").name : null;
-            if (!name) {
-                setInfo();
-                name = JSON.parse(localStorage.getItem("info") || "{}").name;
+            generatedCode = createNewUser();
+            if (generatedCode !== "-1") {
+                localStorage.setItem("code", generatedCode);
+            } else {
+                alert("Error creating user. Please refresh the page.");
             }
+        }
 
-            // send a request to the server
-            fetch("/api/new", {
+        // ensure code is in server
+        fetch("/api/info/exists?code=" + encodeURIComponent(generatedCode || "")).then(response => {
+            if (!response.ok) {
+                console.log("Code not found on server, creating new user...");
+                createNewUser();
+            }
+        });
+
+        setCode(generatedCode || "");
+
+        // sync local info with server
+        const localInfo = localStorage.getItem("info");
+        if (localInfo) {
+            fetch("/api/info/send", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ name })
-            }).then(response => response.text()).then(code => {
-                localStorage.setItem("code", code);
-                setCode(code);
+                body: JSON.stringify({
+                    code: generatedCode,
+                    data: JSON.parse(localInfo)
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error("Failed to sync info with server");
+                }
             });
         }
-        setCode(generatedCode || "");
 
         navigator.geolocation.getCurrentPosition((position) => {
             const { latitude, longitude } = position.coords;
-            setCenter([latitude, longitude]);
-            setPoints([{ lat: latitude, lng: longitude }]);
+            updateLocation(generatedCode || "", latitude, longitude);
+            console.log("Initial location:", latitude, longitude);
         }, (error) => {
             console.error("Error getting location:", error);
         }, {
@@ -48,8 +64,7 @@ export default function DemoUser() {
         // update location
         const watchId = navigator.geolocation.watchPosition((position) => {
             const { latitude, longitude } = position.coords;
-            setPoints(prev => [...prev, { lat: latitude, lng: longitude }]);
-            setCenter([latitude, longitude]);
+            updateLocation(generatedCode || "", latitude, longitude);
             console.log("Updated location:", latitude, longitude);
             console.log("Current points:", [...points, { lat: latitude, lng: longitude }]);
         }, (error) => {
@@ -64,6 +79,50 @@ export default function DemoUser() {
             navigator.geolocation.clearWatch(watchId);
         }
     }, [])
+
+    const updateLocation = (userCode: string, lat: number, lng: number) => {
+        setPoints(prev => [...prev, { lat, lng }]);
+        setCenter([lat, lng]);
+        console.log("send location update to server", userCode, lat, lng);
+        if(userCode) {
+            fetch("/api/location/send", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    code: userCode,
+                    lat,
+                    lng
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error("Failed to send location to server");
+                }
+            });
+        }
+    }
+
+    const createNewUser = (): string => {
+        // prompt for a name if it doesn't exist
+        let name = localStorage.getItem("info") ? JSON.parse(localStorage.getItem("info") || "{}").name : null;
+        if (!name) {
+            setInfo();
+            name = JSON.parse(localStorage.getItem("info") || "{}").name;
+        }
+
+        // send a request to the server
+        fetch("/api/new", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: localStorage.getItem("info"),
+        }).then(response => response.text()).then(code => {
+            return code;
+        });
+        return "-1";
+    }
     
     const setInfo = () => {
         const name = prompt("Enter your name:", "John Doe");

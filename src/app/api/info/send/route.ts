@@ -1,4 +1,4 @@
-import { allCodeToData } from "../../new/route";
+import { allCodeToData } from "@/lib/store";
 
 export async function POST(request: Request) {
     const { code, data } = await request.json();

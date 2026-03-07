@@ -1,11 +1,47 @@
 'use client';
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Map, MapMarker, MapRoute, MarkerContent } from "@/components/ui/map";
 
 export default function DemoFirstResponder() {
+    const [center, setCenter] = useState<[number, number]>([0, 0]);
+    const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
+
+    useEffect(() => {
+        const initializeEffect = async () => {
+            let code = document.getElementById("code") as HTMLInputElement;
+            if (!code) {
+                console.error("Code input element not found");
+                return;
+            }
+            code.value = localStorage.getItem("code") || "";
+            await updateInformation(code.value);
+
+        };
+        initializeEffect();
+    }, [])
+
+    const updateInformation = async (code: string) => {
+        await fetchData(code);
+        await updateLocation(code);
+    }
+
+    const updateLocation = async (code: string) => {
+        fetch("/api/location/get?code=" + encodeURIComponent(code)).then(async response => {
+            if (response.ok) {
+                const data = await response.json();
+                setPoints(data)
+                setCenter([data[0].lat, data[0].lng]);
+            } else {
+                console.error("Failed to fetch location data");
+            }
+        }).catch(error => {
+            console.error("Error fetching location data:", error);
+        });
+    }
     
     const fetchData = async (code: string) => {
-        const response = await fetch(`/api/code?code=${encodeURIComponent(code)}`);
+        const response = await fetch(`/api/info/get?code=${encodeURIComponent(code)}`);
         if (response.ok) {
             const data = await response.json();
             // display data
@@ -41,6 +77,22 @@ export default function DemoFirstResponder() {
                 <p><strong>Age:</strong> <span id="age">N/A</span></p>
                 <p><strong>Medical Conditions:</strong> <span id="medicalConditions">N/A</span></p>
                 <p><strong>Emergency Contacts:</strong> <span id="emergencyContacts">N/A</span></p>
+            </div>
+
+            <div className="w-80 h-100 mt-10 mx-auto">
+                {center[0] !== 0 && center[1] !== 0 && (
+                    <Map center={[center[1], center[0]]} zoom={15}>
+                        <MapMarker longitude={center[1]} latitude={center[0]}>
+                            <MarkerContent>
+                                <div className="relative flex items-center justify-center">
+                                <div className="absolute size-4 rounded-full bg-blue-500/30 animate-ping" />
+                                <div className="size-3 rounded-full bg-blue-500 border-2 border-white shadow-md" />
+                                </div>
+                            </MarkerContent>
+                        </MapMarker>
+                        <MapRoute coordinates={points.map(s => [s.lng, s.lat])}></MapRoute>
+                    </Map>
+                )}
             </div>
         </div>
     )
