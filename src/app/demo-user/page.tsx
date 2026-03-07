@@ -1,28 +1,6 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-
-function UserMarker() {
-    const [position, setPosition] = useState<[number, number] | null>(null);
-
-    useEffect(() => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((pos) => {
-                setPosition([pos.coords.latitude, pos.coords.longitude]);
-            });
-        }
-    }, []);
-
-    if (!position) return null;
-
-    return (
-        <Marker position={position}>
-            <Popup>Your current location</Popup>
-        </Marker>
-    );
-}
-
 
 export default function DemoUser() {
     const [code, setCode] = useState<string>("");
@@ -67,26 +45,26 @@ export default function DemoUser() {
     }
 
     const setMedications = () => {
-    const meds = prompt("Enter your medications (comma separated):", "Aspirin 100mg, Lisinopril 10mg");
-    const times = prompt("Enter the times you take them (comma separated):", "8:00 AM, 8:00 PM");
-    const locations = prompt("Enter where you last put each one (comma separated):", "Bathroom cabinet, Kitchen drawer");
+        const meds = prompt("Enter your medications (comma separated):", "Aspirin 100mg, Lisinopril 10mg");
+        const times = prompt("Enter the times you take them (comma separated):", "8:00 AM, 8:00 PM");
+        const locations = prompt("Enter where you last put each one (comma separated):", "Bathroom cabinet, Kitchen drawer");
 
-    const medList = meds?.split(',').map(m => m.trim()) || [];
-    const timeList = times?.split(',').map(t => t.trim()) || [];
-    const locationList = locations?.split(',').map(l => l.trim()) || [];
+        const medList = meds?.split(',').map(m => m.trim()) || [];
+        const timeList = times?.split(',').map(t => t.trim()) || [];
+        const locationList = locations?.split(',').map(l => l.trim()) || [];
 
-    const medObjects = medList.map((name, idx) => ({
-      name,
-      time: timeList[idx] || "",
-      location: locationList[idx] || ""
-    }));
+        const medObjects = medList.map((name, idx) => ({
+        name,
+        time: timeList[idx] || "",
+        location: locationList[idx] || ""
+        }));
 
-    const info = JSON.parse(localStorage.getItem("info") || "{}");
-    info.medications = medObjects;
-    localStorage.setItem("info", JSON.stringify(info));
+        const info = JSON.parse(localStorage.getItem("info") || "{}");
+        info.medications = medObjects;
+        localStorage.setItem("info", JSON.stringify(info));
 
-    alert("Medications saved!");
-  };
+        alert("Medications saved!");
+    };
 
     return (
         <div className="content flex flex-col">
@@ -116,19 +94,8 @@ export default function DemoUser() {
                 </div>
             </div>
             <div className="w-80 h-80 mt-10 mx-auto">
-    <MapContainer 
-        center={[37.7749, -122.4194]} 
-        zoom={13} 
-        style={{ height: '100%', width: '100%' }} // fill the parent div
-    >
-        <TileLayer 
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution="&copy; OpenStreetMap contributors"
-        />
-        <UserMarker />
-    </MapContainer>
-</div>
-
+                
+            </div>
 
             { /* code for first responders */ }
             <div className="bg-zinc-300 w-80 h-30 mt-10 mx-auto items-center justify-center flex text-3xl">
