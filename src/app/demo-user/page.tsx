@@ -1,5 +1,6 @@
 'use client';
 
+import { Map } from "@/components/ui/map";
 import { useEffect, useState } from "react";
 
 export default function DemoUser() {
@@ -93,8 +94,8 @@ export default function DemoUser() {
                     </button>
                 </div>
             </div>
-            <div className="w-80 h-80 mt-10 mx-auto">
-                
+            <div className="w-80 h-120 mt-10 mx-auto">
+                <Map />
             </div>
 
             { /* code for first responders */ }
