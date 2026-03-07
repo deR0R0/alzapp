@@ -44,16 +44,23 @@ export default function DemoUser() {
             timeout: 5000
         });
 
-        // simulate location updates every 2.5 seconds
-        window.setInterval(() => {
-            navigator.geolocation.getCurrentPosition(updateLocation, (error) => {
-                console.error("Error getting location:", error);
-            }, {
-                enableHighAccuracy: true,
-                maximumAge: 0,
-                timeout: 5000
-            });
-        }, 2500);
+        // update location
+        const watchId = navigator.geolocation.watchPosition((position) => {
+            const { latitude, longitude } = position.coords;
+            setPoints(prev => [...prev, { lat: latitude, lng: longitude }]);
+            setCenter([latitude, longitude]);
+            console.log("Updated location:", latitude, longitude);
+        }, (error) => {
+            console.error("Error watching location:", error);
+        }, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000
+        });
+
+        return () => {
+            navigator.geolocation.clearWatch(watchId);
+        }
     }, [])
     
     const setInfo = () => {
@@ -95,6 +102,7 @@ export default function DemoUser() {
     const updateLocation = (position: any) => {
         const { latitude, longitude } = position.coords;
         setPoints(prev => [...prev, { lat: latitude, lng: longitude }]);
+        setCenter([latitude, longitude]);
         console.log("Updated location:", latitude, longitude);
     }
 
