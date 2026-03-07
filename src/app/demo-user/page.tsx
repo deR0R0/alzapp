@@ -1,6 +1,6 @@
 'use client';
 
-import { Map, MapControls, MapMarker, MarkerContent } from "@/components/ui/map";
+import { Map, MapControls, MapMarker, MapRoute, MarkerContent } from "@/components/ui/map";
 import { useEffect, useState } from "react";
 
 export default function DemoUser() {
@@ -50,6 +50,7 @@ export default function DemoUser() {
             setPoints(prev => [...prev, { lat: latitude, lng: longitude }]);
             setCenter([latitude, longitude]);
             console.log("Updated location:", latitude, longitude);
+            console.log("Current points:", [...points, { lat: latitude, lng: longitude }]);
         }, (error) => {
             console.error("Error watching location:", error);
         }, {
@@ -99,13 +100,6 @@ export default function DemoUser() {
         alert("Medications saved!");
     };
 
-    const updateLocation = (position: any) => {
-        const { latitude, longitude } = position.coords;
-        setPoints(prev => [...prev, { lat: latitude, lng: longitude }]);
-        setCenter([latitude, longitude]);
-        console.log("Updated location:", latitude, longitude);
-    }
-
     return (
         <div className="content flex flex-col">
             { /* buttons */ }
@@ -144,13 +138,14 @@ export default function DemoUser() {
                                 </div>
                             </MarkerContent>
                         </MapMarker>
+                        <MapRoute coordinates={points.map(s => [s.lng, s.lat])}></MapRoute>
                     </Map>
                 )}
             </div>
 
             { /* code for first responders */ }
             <div className="bg-zinc-300 w-80 h-30 mt-10 mx-auto items-center justify-center flex text-3xl">
-                FR CODE: {code}
+                CODE: {code}
             </div>
         </div>
     )
