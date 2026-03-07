@@ -1,10 +1,12 @@
 'use client';
 
-import { Map } from "@/components/ui/map";
+import { Map, MapControls, MapMarker, MarkerContent } from "@/components/ui/map";
 import { useEffect, useState } from "react";
 
 export default function DemoUser() {
     const [code, setCode] = useState<string>("");
+    const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
+    const [center, setCenter] = useState<[number, number]>([0, 0]);
 
     useEffect(() => {
         // generate a code
@@ -29,6 +31,29 @@ export default function DemoUser() {
         if (typeof window !== 'undefined' && localStorage.getItem("info")) {
             sendCodeToServer(generatedCode);
         }
+
+        navigator.geolocation.getCurrentPosition((position) => {
+            const { latitude, longitude } = position.coords;
+            setCenter([latitude, longitude]);
+            setPoints([{ lat: latitude, lng: longitude }]);
+        }, (error) => {
+            console.error("Error getting location:", error);
+        }, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 5000
+        });
+
+        // simulate location updates every 2.5 seconds
+        window.setInterval(() => {
+            navigator.geolocation.getCurrentPosition(updateLocation, (error) => {
+                console.error("Error getting location:", error);
+            }, {
+                enableHighAccuracy: true,
+                maximumAge: 0,
+                timeout: 5000
+            });
+        }, 2500);
     }, [])
     
     const setInfo = () => {
@@ -67,6 +92,12 @@ export default function DemoUser() {
         alert("Medications saved!");
     };
 
+    const updateLocation = (position: any) => {
+        const { latitude, longitude } = position.coords;
+        setPoints(prev => [...prev, { lat: latitude, lng: longitude }]);
+        console.log("Updated location:", latitude, longitude);
+    }
+
     return (
         <div className="content flex flex-col">
             { /* buttons */ }
@@ -94,8 +125,19 @@ export default function DemoUser() {
                     </button>
                 </div>
             </div>
-            <div className="w-80 h-120 mt-10 mx-auto">
-                <Map />
+            <div className="w-80 h-100 mt-10 mx-auto">
+                {center[0] !== 0 && center[1] !== 0 && (
+                    <Map center={[center[1], center[0]]} zoom={15}>
+                        <MapMarker longitude={center[1]} latitude={center[0]}>
+                            <MarkerContent>
+                                <div className="relative flex items-center justify-center">
+                                <div className="absolute size-4 rounded-full bg-blue-500/30 animate-ping" />
+                                <div className="size-3 rounded-full bg-blue-500 border-2 border-white shadow-md" />
+                                </div>
+                            </MarkerContent>
+                        </MapMarker>
+                    </Map>
+                )}
             </div>
 
             { /* code for first responders */ }
