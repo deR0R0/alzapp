@@ -1,11 +1,21 @@
 'use client';
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Map, MapMarker, MapRoute, MarkerContent } from "@/components/ui/map";
 
 export default function DemoFirstResponder() {
     const [center, setCenter] = useState<[number, number] | null>(null);
     const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
+    const intervalRef = useRef<number | undefined>(undefined);
+
+    const startPolling = (code: string) => {
+        // Clear any existing interval
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+        }
+        // Start new interval
+        intervalRef.current = window.setInterval(() => updateInformation(code), 2500);
+    };
 
     useEffect(() => {
         const initializeEffect = async () => {
@@ -19,9 +29,15 @@ export default function DemoFirstResponder() {
                 return; // wait for user to input code
             }
             await updateInformation(code.value);
-            window.setTimeout(updateInformation, 2500, code.value); // update every 2.5 seconds
+            startPolling(code.value);
         };
         initializeEffect();
+        
+        return () => {
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+            }
+        };
     }, [])
 
     const updateInformation = async (code: string) => {
@@ -68,6 +84,7 @@ export default function DemoFirstResponder() {
                     const code = codeInput.value.trim();
                     if (code) {
                         updateInformation(code);
+                        startPolling(code);
                     } else {
                         alert("Please enter a valid code.");
                     }
