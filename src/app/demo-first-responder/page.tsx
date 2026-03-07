@@ -40,8 +40,8 @@ export default function DemoFirstResponder() {
         };
     }, [])
 
-    const updateInformation = async (code: string) => {
-        await fetchData(code);
+    const updateInformation = async (code: string, manual: boolean = false) => {
+        await fetchData(code, manual);
         await updateLocation(code);
         console.log("Information updated");
     }
@@ -51,7 +51,7 @@ export default function DemoFirstResponder() {
             if (response.ok) {
                 const data = await response.json();
                 setPoints(data)
-                setCenter([data[0].lat, data[0].lng]);
+                setCenter([data[data.length - 1].lat, data[data.length - 1].lng]);
                 console.log("Location updated:", data);
             } else {
                 console.error("Failed to fetch location data");
@@ -61,7 +61,7 @@ export default function DemoFirstResponder() {
         });
     }
     
-    const fetchData = async (code: string) => {
+    const fetchData = async (code: string, manual: boolean = false) => {
         const response = await fetch(`/api/info/get?code=${encodeURIComponent(code)}`);
         if (response.ok) {
             const data = await response.json();
@@ -70,7 +70,7 @@ export default function DemoFirstResponder() {
             (document.getElementById("age") as HTMLSpanElement).innerText = data.age || 'N/A';
             (document.getElementById("medicalConditions") as HTMLSpanElement).innerText = data.medicalConditions || 'N/A';
             (document.getElementById("emergencyContacts") as HTMLSpanElement).innerText = data.emergencyContacts ? data.emergencyContacts.join(', ') : 'N/A';
-        } else {
+        } else if (manual) {
             alert("Code not found");
         }
     }
@@ -83,7 +83,7 @@ export default function DemoFirstResponder() {
                     const codeInput = document.getElementById("code") as HTMLInputElement;
                     const code = codeInput.value.trim();
                     if (code) {
-                        updateInformation(code);
+                        updateInformation(code, true);
                         startPolling(code);
                     } else {
                         alert("Please enter a valid code.");
