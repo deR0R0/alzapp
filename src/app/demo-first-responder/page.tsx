@@ -16,7 +16,7 @@ export default function DemoFirstResponder() {
             }
             code.value = localStorage.getItem("code") || "";
             await updateInformation(code.value);
-
+            window.setTimeout(updateInformation, 2500, code.value); // update every 2.5 seconds
         };
         initializeEffect();
     }, [])
@@ -24,6 +24,7 @@ export default function DemoFirstResponder() {
     const updateInformation = async (code: string) => {
         await fetchData(code);
         await updateLocation(code);
+        console.log("Information updated");
     }
 
     const updateLocation = async (code: string) => {
