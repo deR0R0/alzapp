@@ -3,7 +3,7 @@
 import { Map, MapControls, MapMarker, MapRoute, MarkerContent, useMap } from "@/components/ui/map";
 import { useCallback, useEffect, useState } from "react";
 
-const CLICK_THRESHOLD = 0.0003; // ~30m at equator, good for map click proximity
+const CLICK_THRESHOLD = 0.0001; // ~30m at equator, good for map click proximity
 
 function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
     const { map } = useMap();
@@ -27,9 +27,23 @@ export default function DemoUser() {
     const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
     const [center, setCenter] = useState<[number, number]>([0, 0]);
     const [locationUpdates, setLocationUpdates] = useState<number>(0);
-    const [settingBounds, setSettingBounds] = useState<boolean>(false);
     const [selections, setSelections] = useState<{ lat: number; lng: number }[]>([]);
     const [bounds, setBounds] = useState<{ topLeft: [number, number]; bottomRight: [number, number] } | null>(null);
+    const [outOfBounds, setOutOfBounds] = useState<boolean>(false);
+
+    useEffect(() => {
+        const info = localStorage.getItem("info");
+        if (info) {
+            const parsed = JSON.parse(info);
+            if (parsed.bounds && (parsed.bounds.topLeft[0] !== 0 || parsed.bounds.topLeft[1] !== 0)) {
+                setBounds(parsed.bounds);
+                setSelections([
+                    { lat: parsed.bounds.topLeft[0], lng: parsed.bounds.topLeft[1] },
+                    { lat: parsed.bounds.bottomRight[0], lng: parsed.bounds.bottomRight[1] },
+                ]);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         let watchId: number | null = null;
@@ -111,10 +125,30 @@ export default function DemoUser() {
         return () => { if (watchId) navigator.geolocation.clearWatch(watchId); };
     }, [])
 
+    // Check if a coordinate is outside the bounding box
+    const isOutOfBounds = useCallback((lat: number, lng: number) => {
+        const info = localStorage.getItem("info");
+        if (!info) return false;
+        const parsed = JSON.parse(info);
+        if (!parsed.bounds) return false;
+        // essentially, we need to determine out of bounds
+        // based on the box.
+        const { topLeft, bottomRight } = parsed.bounds;
+        if(lng < topLeft[1] || lng > bottomRight[1]) {
+            return true; // out of bounds horizontally
+        } else if (lat > topLeft[0] || lat < bottomRight[0]) {
+            return true; // out of bounds vertically
+        }
+        return false; // within bounds
+    }, []);
+
     const updateLocation = (userCode: string, lat: number, lng: number) => {
         setPoints(prev => [...prev, { lat, lng }]);
         setCenter([lat, lng]);
         setLocationUpdates(prev => prev + 1);
+
+        // Out-of-bounds detection
+        setOutOfBounds(isOutOfBounds(lat, lng));
 
         if(locationUpdates >= 5) {
             setLocation(userCode);
@@ -204,12 +238,22 @@ export default function DemoUser() {
             const newBounds = { topLeft, bottomRight };
             setBounds(newBounds);
 
-            // Persist to localStorage info
+            // Persist to localStorage info and sync to server
             const info = localStorage.getItem("info");
             if (info) {
                 const parsed = JSON.parse(info);
                 parsed.bounds = newBounds;
                 localStorage.setItem("info", JSON.stringify(parsed));
+
+                // Sync updated info with server
+                const currentCode = localStorage.getItem("code");
+                if (currentCode) {
+                    fetch("/api/info/send", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ code: currentCode, data: parsed })
+                    });
+                }
             }
         } else {
             setBounds(null);
@@ -250,6 +294,19 @@ export default function DemoUser() {
                         Edit Info
                     </button>
                 </div>
+
+                {/* Out-of-bounds warning */}
+                {outOfBounds && (
+                    <div className="bg-amber-50 border border-amber-300 rounded-2xl p-4 flex items-center gap-3 animate-pulse">
+                        <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-lg shrink-0">
+                            ⚠️
+                        </div>
+                        <div>
+                            <p className="font-semibold text-amber-800 text-sm">Outside Safe Zone</p>
+                            <p className="text-xs text-amber-600">Current location is outside the defined bounds.</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* Emergency buttons */}
                 <div className="grid grid-cols-2 gap-3">
