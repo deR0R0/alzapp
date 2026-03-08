@@ -312,7 +312,7 @@ export default function DemoUser() {
                 <div className="grid grid-cols-2 gap-3">
                     <button
                         className="flex flex-col items-center gap-2 bg-white border border-blue-200 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group"
-                        onClick={() => alert('Contacting family members and first responders...')}
+                        onClick={() => alert('Contacting family members and caretakers...')}
                     >
                         <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-lg group-hover:bg-blue-100 transition-colors">
                             📞
@@ -420,7 +420,7 @@ export default function DemoUser() {
                 {/* Responder code */}
                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                     <div className="px-4 py-3 border-b border-slate-100">
-                        <h2 className="text-sm font-semibold text-slate-700">First Responder Code</h2>
+                        <h2 className="text-sm font-semibold text-slate-700">Caretaker Code</h2>
                     </div>
                     <div className="px-4 py-5 flex items-center justify-center">
                         {code ? (

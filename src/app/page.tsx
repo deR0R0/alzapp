@@ -30,7 +30,7 @@ export default function Home() {
           </a>
 
           <a
-            href="/demo-first-responder"
+            href="/demo-caretaker"
             className="group block w-full rounded-2xl bg-white p-6 shadow-sm border border-slate-200 hover:shadow-md hover:border-emerald-200 transition-all"
           >
             <div className="flex items-center gap-4">
@@ -38,7 +38,7 @@ export default function Home() {
                 🩺
               </div>
               <div>
-                <p className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">First Responder</p>
+                <p className="font-semibold text-slate-900 group-hover:text-emerald-600 transition-colors">Caretaker</p>
                 <p className="text-sm text-slate-500">Look up patient info & location</p>
               </div>
               <svg className="ml-auto w-5 h-5 text-slate-300 group-hover:text-emerald-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
