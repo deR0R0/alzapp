@@ -26,7 +26,6 @@ export default function DemoUser() {
     const [code, setCode] = useState<string>("");
     const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
     const [center, setCenter] = useState<[number, number]>([0, 0]);
-    const [locationUpdates, setLocationUpdates] = useState<number>(0);
     const [selections, setSelections] = useState<{ lat: number; lng: number }[]>([]);
     const [bounds, setBounds] = useState<{ topLeft: [number, number]; bottomRight: [number, number] } | null>(null);
     const [outOfBounds, setOutOfBounds] = useState<boolean>(false);
@@ -145,38 +144,10 @@ export default function DemoUser() {
     const updateLocation = (userCode: string, lat: number, lng: number) => {
         setPoints(prev => [...prev, { lat, lng }]);
         setCenter([lat, lng]);
-        setLocationUpdates(prev => prev + 1);
 
-        // Out-of-bounds detection
         setOutOfBounds(isOutOfBounds(lat, lng));
 
-        if(locationUpdates >= 5) {
-            setLocation(userCode);
-            setLocationUpdates(0);
-            return;
-        }
-
         console.log("send location update to server", userCode, lat, lng);
-        if(userCode) {
-            fetch("/api/location/send", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    code: userCode,
-                    lat,
-                    lng
-                })
-            }).then(response => {
-                if (!response.ok) {
-                    console.error("Failed to send location to server");
-                }
-            });
-        }
-    }
-
-    const setLocation = (userCode: string) => {
         if(userCode) {
             fetch("/api/location/replace", {
                 method: "POST",
@@ -187,6 +158,10 @@ export default function DemoUser() {
                     code: userCode,
                     coords: points
                 })
+            }).then(response => {
+                if (!response.ok) {
+                    console.error("Failed to send location to server");
+                }
             });
         }
     }
