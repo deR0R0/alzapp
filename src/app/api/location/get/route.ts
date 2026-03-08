@@ -7,8 +7,6 @@ export async function GET(request: Request) {
         return new Response("Code is required", { status: 400 });
     }
 
-    console.log(codeToLocations)
-
     const locations = codeToLocations.get(code);
     if (!locations) {
         return new Response("Code not found", { status: 404 });

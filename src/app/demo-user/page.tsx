@@ -1,7 +1,7 @@
 'use client';
 
 import { Map, MapControls, MapMarker, MapRoute, MarkerContent, useMap } from "@/components/ui/map";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const CLICK_THRESHOLD = 0.0001; // ~30m at equator, good for map click proximity
 
@@ -25,6 +25,7 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
 export default function DemoUser() {
     const [code, setCode] = useState<string>("");
     const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
+    const pointsRef = useRef(points);
     const [center, setCenter] = useState<[number, number]>([0, 0]);
     const [selections, setSelections] = useState<{ lat: number; lng: number }[]>([]);
     const [bounds, setBounds] = useState<{ topLeft: [number, number]; bottomRight: [number, number] } | null>(null);
@@ -110,8 +111,6 @@ export default function DemoUser() {
         watchId = navigator.geolocation.watchPosition((position) => {
             const { latitude, longitude } = position.coords;
             updateLocation(generatedCode || "", latitude, longitude);
-            console.log("Updated location:", latitude, longitude);
-            console.log("Current points:", [...points, { lat: latitude, lng: longitude }]);
         }, (error) => {
             console.error("Error watching location:", error);
         }, {
@@ -142,12 +141,20 @@ export default function DemoUser() {
     }, []);
 
     const updateLocation = (userCode: string, lat: number, lng: number) => {
-        setPoints(prev => [...prev, { lat, lng }]);
+        setPoints(prev => {
+            const newPoints = [...prev, { lat, lng }];
+            pointsRef.current = newPoints;
+            return newPoints;
+        });
         setCenter([lat, lng]);
 
         setOutOfBounds(isOutOfBounds(lat, lng));
 
-        console.log("send location update to server", userCode, lat, lng);
+        // Use ref to read the freshly-updated points
+        const currentPoints = [...pointsRef.current];
+        console.log(currentPoints);
+
+        console.log("send location update to server", userCode);
         if(userCode) {
             fetch("/api/location/replace", {
                 method: "POST",
@@ -156,7 +163,7 @@ export default function DemoUser() {
                 },
                 body: JSON.stringify({
                     code: userCode,
-                    coords: points
+                    coords: currentPoints
                 })
             }).then(response => {
                 if (!response.ok) {

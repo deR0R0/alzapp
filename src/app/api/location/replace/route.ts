@@ -3,7 +3,9 @@ import { codeToLocations } from "@/lib/store";
 
 export async function POST(request: NextRequest) {
     const { code, coords } = await request.json();
-    console.log(`Received location for code ${code}: (${coords[0]}, ${coords[1]})`);
+
+    console.log(`Received location for code ${code}:`, coords);
+
     if (!codeToLocations.has(code)) {
         codeToLocations.set(code, []);
     }

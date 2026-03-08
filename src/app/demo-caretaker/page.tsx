@@ -6,14 +6,13 @@ import { Map, MapMarker, MapRoute, MarkerContent } from "@/components/ui/map";
 export default function DemoCaretaker() {
     const [center, setCenter] = useState<[number, number] | null>(null);
     const [points, setPoints] = useState<{ lat: number, lng: number }[]>([]);
+    const [bounds, setBounds] = useState<{ topLeft: [number, number], bottomRight: [number, number] } | null>(null);
     const intervalRef = useRef<number | undefined>(undefined);
 
     const startPolling = (code: string) => {
-        // Clear any existing interval
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
         }
-        // Start new interval
         intervalRef.current = window.setInterval(() => updateInformation(code), 2500);
     };
 
@@ -51,8 +50,9 @@ export default function DemoCaretaker() {
             if (response.ok) {
                 const data = await response.json();
                 setPoints(data)
-                setCenter([data[data.length - 1].lat, data[data.length - 1].lng]);
-                console.log("Location updated:", data);
+                if (data.length > 0) {
+                    setCenter([data[data.length - 1].lat, data[data.length - 1].lng]);
+                }
             } else {
                 console.error("Failed to fetch location data");
             }
@@ -70,6 +70,14 @@ export default function DemoCaretaker() {
             (document.getElementById("age") as HTMLSpanElement).innerText = data.age || 'N/A';
             (document.getElementById("medicalConditions") as HTMLSpanElement).innerText = data.medicalConditions || 'N/A';
             (document.getElementById("emergencyContacts") as HTMLSpanElement).innerText = data.emergencyContacts ? data.emergencyContacts.join(', ') : 'N/A';
+            if (data.bounds) {
+                setBounds({
+                    topLeft: data.bounds.topLeft,
+                    bottomRight: data.bounds.bottomRight
+                });
+            } else {
+                setBounds(null);
+            }
         } else if (manual) {
             alert("Code not found");
         }
@@ -151,10 +159,55 @@ export default function DemoCaretaker() {
                                     </MarkerContent>
                                 </MapMarker>
                                 <MapRoute coordinates={points.map(s => [s.lng, s.lat])} />
+                                {bounds && [
+                                    { lat: bounds.topLeft[0], lng: bounds.topLeft[1] },
+                                    { lat: bounds.bottomRight[0], lng: bounds.bottomRight[1] },
+                                ].map((sel, i) => (
+                                    <MapMarker key={`sel-${i}`} longitude={sel.lng} latitude={sel.lat}>
+                                        <MarkerContent>
+                                            <div className="relative flex items-center justify-center">
+                                                <div className="absolute size-5 rounded-full bg-red-500/20 animate-pulse" />
+                                                <div className="size-3 rounded-full bg-red-500 border-2 border-white shadow-md" />
+                                            </div>
+                                        </MarkerContent>
+                                    </MapMarker>
+                                ))}
                             </Map>
                         ) : (
                             <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
                                 Enter a code to see patient location
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="px-4 py-3 border-b border-slate-100">
+                        <h2 className="text-sm font-semibold text-slate-700">Safe Zone Bounds</h2>
+                    </div>
+                    <div className="px-4 py-3">
+                        {bounds ? (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-slate-500">Top-Left</span>
+                                    <span className="font-mono text-xs text-slate-700 bg-slate-50 px-2 py-1 rounded-lg">
+                                        {bounds.topLeft[0].toFixed(5)}, {bounds.topLeft[1].toFixed(5)}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between text-sm">
+                                    <span className="text-slate-500">Bottom-Right</span>
+                                    <span className="font-mono text-xs text-slate-700 bg-slate-50 px-2 py-1 rounded-lg">
+                                        {bounds.bottomRight[0].toFixed(5)}, {bounds.bottomRight[1].toFixed(5)}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-1">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                    <span className="text-xs text-emerald-600 font-medium">Bounds set</span>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-slate-400 text-sm">
+                                No bounds set for this patient
                             </div>
                         )}
                     </div>
